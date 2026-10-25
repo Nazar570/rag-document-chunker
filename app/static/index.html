@@ -39,12 +39,20 @@
         <div id="errorAlert" class="alert alert-danger d-none" role="alert"></div>
 
         <div id="resultsCard" class="card p-4 shadow-sm d-none">
-            <h4 class="mb-3">Generated chunks:</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">Generated chunks:</h4>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="exportChunks('json')">Export JSON</button>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="exportChunks('csv')">Export CSV</button>
+                </div>
+            </div>
             <div id="chunksList" class="d-flex flex-column gap-3"></div>
         </div>
     </div>
 
     <script>
+        let currentDocumentId = null;
+
         async function processText() {
             const text = document.getElementById("textInput").value;
             const chunkSize = parseInt(document.getElementById("chunkSize").value, 10);
@@ -79,6 +87,7 @@
                     throw new Error(data.detail || "An error occurred during processing");
                 }
 
+                currentDocumentId = data.id;
                 resultsCard.classList.remove("d-none");
 
                 data.chunks.forEach(chunk => {
@@ -99,6 +108,11 @@
                 errorAlert.textContent = err.message;
                 errorAlert.classList.remove("d-none");
             }
+        }
+
+        function exportChunks(format) {
+            if (!currentDocumentId) return;
+            window.location.href = `/api/documents/${currentDocumentId}/export?format=${format}`;
         }
     </script>
 </body>

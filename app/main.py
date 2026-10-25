@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from app.services.chunker import (
     WordChunkingStrategy,
     CharacterChunkingStrategy
 )
+from app.services.exporter import ChunkExporter
 
 Base.metadata.create_all(bind=engine)
 
@@ -82,3 +83,33 @@ def get_document(document_id: int, db: Session = Depends(get_db)):
             detail="document not found"
         )
     return document
+
+
+@app.get("/api/documents/{document_id}/export")
+def export_document_chunks(document_id: int, format: str = "json", db: Session = Depends(get_db)):
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="document not found"
+        )
+
+    if format == "csv":
+        content = ChunkExporter.to_csv(document.chunks)
+        media_type = "text/csv"
+        filename = f"chunks_doc_{document_id}.csv"
+    elif format == "json":
+        content = ChunkExporter.to_json(document.chunks)
+        media_type = "application/json"
+        filename = f"chunks_doc_{document_id}.json"
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported format. Use 'json' or 'csv'."
+        )
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
