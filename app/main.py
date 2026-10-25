@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 from app.database import engine, Base, get_db
@@ -15,6 +17,13 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="RAG Document Chunker API")
 cleaner = TextCleaner()
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def serve_ui():
+    return FileResponse("app/static/index.html")
 
 
 @app.post("/api/documents/process", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
