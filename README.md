@@ -2,11 +2,7 @@
 
 ## Autor
 
-- **Autor:** Nazar Suslyk
-- **Kierunek:** Informatyka
-- **Specjalność:** Inżynieria Systemów Inteligentnych (ISI)
-- **Wydział:** Wydział Politechniczny, Akademia Tarnowska
-- **Prowadzący:** dr inż. Tomasz Gądek
+Nazar Suslyk
 
 ---
 
@@ -66,7 +62,7 @@ Aplikacja rozwiązuje kluczowy problem w architekturze systemów RAG (Retrieval-
 1. **Sklonuj repozytorium:**
 
    ```bash
-   git clone <URL_REPOZYTORIUM>
+   git clone https://github.com/Nazar570/rag-document-chunker
    cd rag-document-chunker
    ```
 
@@ -107,7 +103,7 @@ Aplikacja rozwiązuje kluczowy problem w architekturze systemów RAG (Retrieval-
 
 ## Testy
 
-Projekt posiada kompleksowy zestaw ponad 40 zautomatyzowanych testów zorganizowanych według standardu **AAA (Arrange-Act-Assert)**:
+Projekt posiada kompleksowy zestaw 41 zautomatyzowanych testów (29 jednostkowych oraz 12 integracyjnych) zorganizowanych według standardu **AAA (Arrange-Act-Assert)**:
 
 - **Arrange (Przygotuj):** Inicjalizacja danych wejściowych, obiektów i stanu początkowego.
 - **Act (Działaj):** Wywołanie testowanej metody lub wysłanie symulowanego żądania HTTP.
@@ -151,8 +147,6 @@ W testach integracyjnych zastosowano pełną izolację bazy danych poprzez podmi
   ```
 
 ---
-
-## Dokumentacja API
 
 ## Dokumentacja API
 
@@ -241,6 +235,104 @@ chunk_index,token_count,text
 ```
 
 ---
+
+## Przypadki testowe dla testera manualnego (TestCase)
+
+Poniższe scenariusze testowe zostały przygotowane dla testera manualnego w celu weryfikacji poprawności działania interfejsu graficznego (UI), walidacji formularzy, silnika czyszczenia tekstu, algorytmów podziału, generowania plików eksportu oraz integracji z API.
+
+---
+
+| ID | TC001 |
+| :--- | :--- |
+| Tytuł | Weryfikacja poprawnego podziału tekstu według słów z parametrem overlap |
+| Warunki początkowe | Aplikacja jest uruchomiona pod adresem `http://127.0.0.1:8000/`, strona główna jest załadowana w przeglądarce, pola formularza zawierają wartości domyślne. |
+| Kroki testowe | 1. W polu tekstowym „Input text” wpisz: `jeden dwa trzy cztery pięć sześć`.<br>2. W polu „Chunk Size” wprowadź wartość `3`.<br>3. W polu „Overlap” wprowadź wartość `1`.<br>4. W liście rozwijanej „Strategy” wybierz opcję `By words`.<br>5. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Pod formularzem pojawia się sekcja „Generated chunks” z dwoma kafelkami:<br>• Chunk #0 z tekstem `jeden dwa trzy` oraz etykietą `Units: 3`.<br>• Chunk #1 z tekstem `trzy cztery pięć` oraz etykietą `Units: 3`.<br>Komunikat o błędzie nie jest widoczny. |
+
+---
+
+| ID | TC002 |
+| :--- | :--- |
+| Tytuł | Weryfikacja segmentacji według liczby znaków |
+| Warunki początkowe | Strona główna `http://127.0.0.1:8000/` jest załadowana w przeglądarce. |
+| Kroki testowe | 1. W polu „Input text” wpisz ciąg znaków: `ABCDEFGHIJ`.<br>2. W polu „Chunk Size” wprowadź wartość `4`.<br>3. W polu „Overlap” wprowadź wartość `1`.<br>4. W liście rozwijanej „Strategy” wybierz opcję `By characters`.<br>5. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Na liście wygenerowanych fragmentów pojawiają się 3 kafelki:<br>• Chunk #0: `ABCD` (Units: 4)<br>• Chunk #1: `DEFG` (Units: 4)<br>• Chunk #2: `GHIJ` (Units: 4) |
+
+---
+
+| ID | TC003 |
+| :--- | :--- |
+| Tytuł | Weryfikacja usuwania tagów HTML i formatowania Markdown przed podziałem tekstu |
+| Warunki początkowe | Strona główna aplikacji jest otwarta. |
+| Kroki testowe | 1. W polu „Input text” wpisz: `<h3>Tytuł sekcji</h3> To jest [artykuł](https://example.com) oraz <b>ważna informacja</b>`.<br>2. Ustaw „Chunk Size” na `10`, „Overlap” na `0`, „Strategy” na `By words`.<br>3. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Wygenerowany chunk nie zawiera znaczników `<h3>`, `</h3>`, `<b>`, `</b>` ani składni linku Markdown `[...] (...)`. Widoczny tekst to: `Tytuł sekcji To jest artykuł oraz ważna informacja.`. |
+
+---
+
+| ID | TC004 |
+| :--- | :--- |
+| Tytuł | Weryfikacja blokady nieprawidłowej relacji parametrów chunk_size i overlap |
+| Warunki początkowe | Strona główna aplikacji jest otwarta. |
+| Kroki testowe | 1. W polu „Input text” wpisz: `Przykładowy tekst do przetworzenia`.<br>2. W polu „Chunk Size” wprowadź `4`.<br>3. W polu „Overlap” wprowadź `4` (wartość równa rozmiarowi chunka).<br>4. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Na ekranie pojawia się czerwony baner z komunikatem błędu: `overlap must be smaller than chunk_size`. Lista wygenerowanych chunków nie zostaje wyświetlona. |
+
+---
+
+| ID | TC005 |
+| :--- | :--- |
+| Tytuł | Obsługa tekstu zawierającego wyłącznie białe znaki i puste tagi HTML |
+| Warunki początkowe | Strona główna aplikacji jest otwarta. |
+| Kroki testowe | 1. W polu „Input text” wprowadź ciąg złożony wyłącznie z tagów i spacji: `<div>   <p> </p>  </div>`.<br>2. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Wyświetla się czerwony baner błędu z informacją: `text cannot be empty after cleaning`. Żaden dokument nie zostaje dodany do bazy danych. |
+
+---
+
+| ID | TC006 |
+| :--- | :--- |
+| Tytuł | Podział tekstu o długości mniejszej niż zadany Chunk Size |
+| Warunki początkowe | Strona główna aplikacji jest otwarta. |
+| Kroki testowe | 1. W polu „Input text” wpisz: `Krótka fraza`.<br>2. W polu „Chunk Size” wprowadź `10`.<br>3. W polu „Overlap” wprowadź `2`.<br>4. Wybierz strategię `By words`.<br>5. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | System tworzy dokładnie jeden kafelek (Chunk #0) zawierający pełny tekst `Krótka fraza` z etykietą `Units: 2`. |
+
+---
+
+| ID | TC007 |
+| :--- | :--- |
+| Tytuł | Weryfikacja poprawnego pobierania pliku JSON po przetworzeniu dokumentu |
+| Warunki początkowe | Strona główna aplikacji jest otwarta, wykonano uprzednio podział dowolnego tekstu (np. z TC001) i widoczne są przyciski eksportu. |
+| Kroki testowe | 1. W sekcji „Generated chunks” kliknij przycisk „Export JSON”.<br>2. Sprawdź plik pobrany przez przeglądarkę w folderze Pobrane (Downloads).<br>3. Otwórz pobrany plik w edytorze tekstu. |
+| Oczekiwany rezultat | • Przeglądarka pobiera plik o nazwie `chunks_doc_<ID>.json`.<br>• Plik zawiera poprawną składnię tablicy obiektów JSON z kluczami `chunk_index`, `text`, `token_count`.<br>• Polskie znaki diakrytyczne są zachowane w czytelnej postaci (UTF-8). |
+
+---
+
+| ID | TC008 |
+| :--- | :--- |
+| Tytuł | Weryfikacja eksportu chunków do formatu arkusza kalkulacyjnego CSV |
+| Warunki początkowe | Na stronie widoczne są wygenerowane chunki z aktywnego formularza. |
+| Kroki testowe | 1. W sekcji „Generated chunks” kliknij przycisk „Export CSV”.<br>2. Otwórz pobrany plik w programie Excel lub notatniku. |
+| Oczekiwany rezultat | • Przeglądarka pobiera plik o nazwie `chunks_doc_<ID>.csv`.<br>• Pierwszy wiersz pliku to nagłówek kolumn: `chunk_index,token_count,text`.<br>• Kolejne wiersze zawierają dane liczbowe i tekstowe oddzielone przecinkami zgodnie ze specyfikacją CSV. |
+
+---
+
+| ID | TC009 |
+| :--- | :--- |
+| Tytuł | Potwierdzenie zapisu encji dokumentu i powiązanych chunków w bazie SQLite |
+| Warunki początkowe | Przetworzono co najmniej jeden dokument w interfejsie graficznym. |
+| Kroki testowe | 1. Otwórz nową kartę przeglądarki pod adresem `http://127.0.0.1:8000/docs`.<br>2. Rozwiń sekcję `GET /api/documents`.<br>3. Kliknij przycisk „Try it out”, a następnie „Execute”.<br>4. Zweryfikuj pole „Server response”. |
+| Oczekiwany rezultat | Serwer zwraca kod odpowiedzi `200 OK`. W ciele odpowiedzi znajduje się tablica dokumentów w formacie JSON z unikalnymi identyfikatorami `id`, znacznikiem czasu `created_at` oraz zagnieżdżoną listą obiektów `chunks`. |
+
+---
+
+| ID | TC010 |
+| :--- | :--- |
+| Tytuł | Weryfikacja ograniczeń atrybutów min pól formularza numerycznego |
+| Warunki początkowe | Strona główna aplikacji jest otwarta. |
+| Kroki testowe | 1. Wpisz dowolny tekst w polu „Input text”.<br>2. W polu „Chunk Size” spróbuj wprowadzić wartość `0` lub `-1`.<br>3. W polu „Overlap” spróbuj wprowadzić `-1`.<br>4. Kliknij przycisk „Split into chunks”. |
+| Oczekiwany rezultat | Wbudowany mechanizm walidacji przeglądarki (HTML5 constraint validation) blokuje wysłanie formularza, podświetlając pole i wyświetlając dymek informujący, że wartość musi być większa lub równa minimalnemu limitowi (`min="1"` dla Chunk Size, `min="0"` dla Overlap). Żadne zapytanie sieciowe nie zostaje wysłane. |
+
+
+---
+
 ## Technologie użyte w projekcie
 
 ### Backend i API
