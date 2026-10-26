@@ -1,3 +1,4 @@
+import pytest
 from app.services.cleaner import TextCleaner
 
 
@@ -70,3 +71,20 @@ def test_clean_none_handling(text_cleaner: TextCleaner):
 
     # Assert
     assert result == ""
+
+
+@pytest.mark.parametrize(
+    "raw_input, expected_output",
+    [
+        ("<h1>Header</h1> Content", "Header Content"),
+        ("[Link text](https://test.com) here", "Link text here"),
+        ("Sentence with     redundant     tabs\t\n", "Sentence with redundant tabs"),
+        ("<b>Bold</b> and [Link](http://a.com) and spaces   ", "Bold and Link and spaces"),
+    ]
+)
+def test_cleaner_parametrized_cases(text_cleaner: TextCleaner, raw_input: str, expected_output: str):
+    # Arrange / Act
+    result = text_cleaner.clean(raw_input)
+
+    # Assert
+    assert result == expected_output
