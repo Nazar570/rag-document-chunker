@@ -2,21 +2,34 @@ import re
 
 
 class TextCleaner:
-    def remove_html_tags(self, text: str) -> str:
-        pattern = re.compile(r"<[^>]+>")
-        return pattern.sub("", text)
+    _HTML_PATTERN = re.compile(r"<[^>]+>")
+    _MD_LINK_PATTERN = re.compile(r"\[([^\]]+)\]\([^)]+\)")
+    _MD_FORMATTING_PATTERN = re.compile(r"[*_~`#>]")
+    _WHITESPACE_PATTERN = re.compile(r"\s+")
 
-    def remove_markdown(self, text: str) -> str:
-        text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
-        text = re.sub(r"[*_~`#>]", "", text)
-        return text
-
-    def normalize_whitespace(self, text: str) -> str:
-        return re.sub(r"\s+", " ", text).strip()
-
-    def clean(self, text: str) -> str:
+    @staticmethod
+    def remove_html_tags(text: str) -> str:
         if not text:
             return ""
-        cleaned = self.remove_html_tags(text)
-        cleaned = self.remove_markdown(cleaned)
-        return self.normalize_whitespace(cleaned)
+        return TextCleaner._HTML_PATTERN.sub("", text)
+
+    @staticmethod
+    def remove_markdown(text: str) -> str:
+        if not text:
+            return ""
+        text = TextCleaner._MD_LINK_PATTERN.sub(r"\1", text)
+        return TextCleaner._MD_FORMATTING_PATTERN.sub("", text)
+
+    @staticmethod
+    def normalize_whitespace(text: str) -> str:
+        if not text:
+            return ""
+        return TextCleaner._WHITESPACE_PATTERN.sub(" ", text).strip()
+
+    @staticmethod
+    def clean(text: str) -> str:
+        if not text:
+            return ""
+        cleaned = TextCleaner.remove_html_tags(text)
+        cleaned = TextCleaner.remove_markdown(cleaned)
+        return TextCleaner.normalize_whitespace(cleaned)
