@@ -150,7 +150,7 @@ def test_chunking_context_delegates_execution(chunking_context: ChunkingContext)
     expected = ["one two", "three four"]
 
     # Act
-    result = chunking_context.execute(text, chunk_size, overlap)
+    result = chunking_context.split(text, chunk_size, overlap)
 
     # Assert
     assert result == expected
@@ -168,7 +168,7 @@ def test_chunking_context_allows_runtime_strategy_swap(
 
     # Act
     chunking_context.set_strategy(char_strategy)
-    result = chunking_context.execute(text, chunk_size, overlap)
+    result = chunking_context.split(text, chunk_size, overlap)
 
     # Assert
     assert result == expected_chars

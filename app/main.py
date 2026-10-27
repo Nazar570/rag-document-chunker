@@ -7,11 +7,7 @@ from app.database import engine, Base, get_db
 from app.models import Document, Chunk
 from app.schemas import ProcessDocumentRequest, DocumentResponse
 from app.services.cleaner import TextCleaner
-from app.services.chunker import (
-    ChunkingContext,
-    WordChunkingStrategy,
-    CharacterChunkingStrategy
-)
+from app.services.chunker import get_chunking_strategy
 from app.services.exporter import ChunkExporter
 
 Base.metadata.create_all(bind=engine)
@@ -42,13 +38,8 @@ def process_document(payload: ProcessDocumentRequest, db: Session = Depends(get_
             detail="text cannot be empty after cleaning"
         )
 
-    if payload.strategy == "character":
-        strategy = CharacterChunkingStrategy()
-    else:
-        strategy = WordChunkingStrategy()
-
-    context = ChunkingContext(strategy)
-    raw_chunks = context.execute(cleaned_text, payload.chunk_size, payload.overlap)
+    strategy = get_chunking_strategy(payload.strategy)
+    raw_chunks = strategy.split(cleaned_text, payload.chunk_size, payload.overlap)
 
     document = Document(original_text=payload.text)
     db.add(document)

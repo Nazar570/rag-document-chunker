@@ -2,6 +2,15 @@ from abc import ABC, abstractmethod
 
 
 class ChunkingStrategy(ABC):
+    @staticmethod
+    def _validate_params(chunk_size: int, overlap: int) -> None:
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be positive")
+        if overlap < 0:
+            raise ValueError("overlap cannot be negative")
+        if overlap >= chunk_size:
+            raise ValueError("overlap must be smaller than chunk_size")
+
     @abstractmethod
     def split(self, text: str, chunk_size: int, overlap: int) -> list[str]:
         pass
@@ -11,12 +20,7 @@ class WordChunkingStrategy(ChunkingStrategy):
     def split(self, text: str, chunk_size: int, overlap: int) -> list[str]:
         if not text:
             return []
-        if chunk_size <= 0:
-            raise ValueError("chunk_size must be positive")
-        if overlap < 0:
-            raise ValueError("overlap cannot be negative")
-        if overlap >= chunk_size:
-            raise ValueError("overlap must be smaller than chunk_size")
+        self._validate_params(chunk_size, overlap)
 
         words = text.split()
         if not words:
@@ -26,8 +30,7 @@ class WordChunkingStrategy(ChunkingStrategy):
         chunks = []
 
         for i in range(0, len(words), step):
-            chunk_slice = words[i:i + chunk_size]
-            chunks.append(" ".join(chunk_slice))
+            chunks.append(" ".join(words[i:i + chunk_size]))
             if i + chunk_size >= len(words):
                 break
 
@@ -38,12 +41,7 @@ class CharacterChunkingStrategy(ChunkingStrategy):
     def split(self, text: str, chunk_size: int, overlap: int) -> list[str]:
         if not text:
             return []
-        if chunk_size <= 0:
-            raise ValueError("chunk_size must be positive")
-        if overlap < 0:
-            raise ValueError("overlap cannot be negative")
-        if overlap >= chunk_size:
-            raise ValueError("overlap must be smaller than chunk_size")
+        self._validate_params(chunk_size, overlap)
 
         step = chunk_size - overlap
         chunks = []
@@ -58,10 +56,21 @@ class CharacterChunkingStrategy(ChunkingStrategy):
 
 class ChunkingContext:
     def __init__(self, strategy: ChunkingStrategy):
-        self._strategy = strategy
+        self.strategy = strategy
 
     def set_strategy(self, strategy: ChunkingStrategy) -> None:
-        self._strategy = strategy
+        self.strategy = strategy
 
-    def execute(self, text: str, chunk_size: int, overlap: int) -> list[str]:
-        return self._strategy.split(text, chunk_size, overlap)
+    def split(self, text: str, chunk_size: int, overlap: int) -> list[str]:
+        return self.strategy.split(text, chunk_size, overlap)
+
+
+CHUNKING_STRATEGIES: dict[str, type[ChunkingStrategy]] = {
+    "word": WordChunkingStrategy,
+    "character": CharacterChunkingStrategy,
+}
+
+
+def get_chunking_strategy(name: str) -> ChunkingStrategy:
+    strategy_cls = CHUNKING_STRATEGIES.get(name, WordChunkingStrategy)
+    return strategy_cls()
